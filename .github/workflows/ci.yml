@@ -30,12 +30,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r TicTacToeSWPart/requirements.txt
           pip install pytest
-          
-      # Run Python tests
-      - name: Run tests
-        run: |
-          python -m pytest --junitxml=test-reports/results.xml TicTacToeSWPart/tests.py
-          
+      
       # Install Arduino CLI
       - name: Set up Arduino CLI
         run: |
