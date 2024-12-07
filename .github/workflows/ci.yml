@@ -1,0 +1,88 @@
+name: CI Workflow
+
+on:
+  push:
+    branches:
+      - '**'
+      - feature/develop/task3
+  pull_request:
+    branches:
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Set up Python environment
+      - name: Set up Python 3.x
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      # Install PyInstaller
+      - name: Install PyInstaller
+        run: |
+          python -m pip install --upgrade pip
+          pip install pyinstaller
+
+      # Install Arduino CLI
+      - name: Set up Arduino CLI
+        run: |
+          wget https://downloads.arduino.cc/arduino-cli/arduino-cli_latest_Linux_64bit.tar.gz
+          tar -xvf arduino-cli_latest_Linux_64bit.tar.gz
+          sudo mv arduino-cli /usr/local/bin/
+          arduino-cli config init
+
+      # Install Arduino AVR core and libraries
+      - name: Install Arduino AVR core and libraries
+        run: |
+          arduino-cli core update-index
+          arduino-cli core install arduino:avr
+          arduino-cli lib install ArduinoJson
+
+      # Compile Arduino Sketch (simulated)
+      - name: Compile Arduino Sketch (simulated)
+        run: |
+          mkdir -p build  # Ensure the build directory exists
+          arduino-cli compile --fqbn arduino:avr:uno --output-dir build INOTicTacToe/INOTicTacToe.ino
+
+      # Generate client executable from Python script
+      - name: Generate executable
+        run: |
+          mkdir -p dist  # Ensure the dist directory exists
+          pyinstaller --onefile GUI.py
+
+      # Upload the generated executable as an artifact
+      - name: Upload executable as artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: compiled-executable
+          path: dist/GUI  # This is the generated file from PyInstaller
+
+      # Download the artifact (the executable)
+      - name: Download compiled executable artifact
+        uses: actions/download-artifact@v3
+        with:
+          name: compiled-executable
+
+      # Install pyserial
+      - name: Install pyserial
+        run: |
+          pip install pyserial
+
+      # Run PowerShell Script to execute tests
+      - name: Run PowerShell script to execute tests
+        run: |
+          pwsh ./RunAllTests.ps1
+
+      # Upload the test log as an artifact
+      - name: Upload test results log
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-log
+          path: test_results.log
